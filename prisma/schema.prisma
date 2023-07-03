@@ -10,11 +10,77 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums
+enum EnumTransaction {
+  INCOME
+  EXPENSE
+
+  @@map("enum_transaction")
+}
+
+enum EnumBankAccount {
+  CHECKING
+  INVESTMENT
+  CASH
+
+  @@map("enum_bank_account")
+}
+
+// Models
 model User {
   id       String @id @default(uuid()) @db.Uuid
   name     String
   email    String @unique
   password String
 
+  bankAccounts BankAccount[]
+  categories   Category[]
+  transactions Transaction[]
+
   @@map("users")
+}
+
+model BankAccount {
+  id             String          @id @default(uuid()) @db.Uuid
+  userID         String          @map("user_id") @db.Uuid
+  name           String
+  initialBalance Float           @map("initial_balance")
+  type           EnumBankAccount
+  color          String
+
+  transactions Transaction[]
+
+  user User @relation(fields: [userID], references: [id], onDelete: Cascade)
+
+  @@map("bank_accounts")
+}
+
+model Category {
+  id     String          @id @default(uuid()) @db.Uuid
+  userID String          @map("user_id") @db.Uuid
+  name   String
+  icon   String
+  type   EnumTransaction
+
+  user         User          @relation(fields: [userID], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id            String          @id @default(uuid()) @db.Uuid
+  userID        String          @map("user_id") @db.Uuid
+  bankAccountId String          @map("bank_account_id") @db.Uuid
+  categoryId    String?         @map("category_id") @db.Uuid
+  name          String
+  value         Float
+  date          DateTime
+  type          EnumTransaction
+
+  user        User        @relation(fields: [userID], references: [id], onDelete: Cascade)
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@map("transactions")
 }
